@@ -21,8 +21,8 @@ def train(model, optimizer, scheduler, train_dataloader, device):
 
             model.zero_grad()
 
-            pred_time, pred_event = model.forward(time_seqs[:, :-2], event_seqs[:, :-1])
-            loss = model.loss(pred_time, pred_event, time_seqs[:, -2], event_seqs[:, -1])
+            pred_time, pred_event = model.forward(time_seqs[:, :-1], event_seqs[:, :-1])
+            loss = model.loss(pred_time, pred_event, time_seqs[:, -1], event_seqs[:, -1])
             epoch_loss += loss.item()
             loss.backward()
             optimizer.step()
