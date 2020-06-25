@@ -21,8 +21,8 @@ def train(model, optimizer, scheduler, train_dataloader, device):
 
             model.zero_grad()
 
-            pred_time, pred_event = model.forward(time_seqs[:, :-1], event_seqs[:, :-1])
-            loss = model.loss(pred_time, pred_event, time_seqs[:, -1], event_seqs[:, -1])
+            hidden = model.forward(time_seqs[:, :-1], event_seqs[:, :-1])
+            loss = model.loss(hidden, time_seqs[:, 1:], event_seqs[:, 1:])
             epoch_loss += loss.item()
             loss.backward()
             optimizer.step()
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     print("device:", device)
     model = model.to(device)
 
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.1)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2000, gamma=0.1)
 
     train(model, optimizer, scheduler, train_dataloader, device)
