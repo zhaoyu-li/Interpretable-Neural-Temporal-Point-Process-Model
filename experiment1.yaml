@@ -1,0 +1,16 @@
+import numpy as np
+
+Z: 2
+W: 1
+MU: np.array([0.3, 0.5])
+A: np.array([[0.3, 0.7], [0.2, 0.6]])
+
+BATCH_SIZE: 128
+NUM_EPOCHS: 1500
+LR: 0.001
+LR_STEP: 500
+LR_GAMMA: 0.1
+
+EVENT_CLASSES: 2
+
+

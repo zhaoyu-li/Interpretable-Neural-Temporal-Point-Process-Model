@@ -42,9 +42,37 @@ class ATMDataset(Dataset):
         self.event_dataset = []
 
         for time_seq, event_seq in zip(self.time_preprocess, self.event_preprocess):
-            for i in range(len(time_seq)-self.seq_len):
-                self.time_dataset.append(time_seq[i: i+self.seq_len])
-                self.event_dataset.append(event_seq[i: i+self.seq_len])
+            for i in range(len(time_seq) - self.seq_len + 1):
+                self.time_dataset.append(time_seq[i: i + self.seq_len])
+                self.event_dataset.append(event_seq[i: i + self.seq_len])
+
+    def __len__(self):
+        return len(self.time_dataset)
+
+    def __getitem__(self, idx):
+        return self.time_dataset[idx], self.event_dataset[idx]
+
+
+class DemoDataset(Dataset):
+    def __init__(self):
+        self.seq_len = cfg.SEQ_LEN
+
+        self.time_dataset = []
+        self.event_dataset = []
+
+        self.dataset_name = '2DHawkes.txt'
+
+        f = open(osp.abspath(osp.join(cfg.DATA_DIR, self.dataset_name)))
+
+        for line in f.readlines():
+            line = line.strip().split(',')
+            time_seq = [float(t.split()[0]) for t in line]
+            event_seq = [int(t.split()[1]) for t in line]
+            if len(line) < self.seq_len:
+                continue
+            for i in range(len(line) - self.seq_len + 1):
+                self.time_dataset.append(time_seq[i: i + self.seq_len])
+                self.event_dataset.append(event_seq[i: i + self.seq_len])
 
     def __len__(self):
         return len(self.time_dataset)
@@ -55,8 +83,8 @@ class ATMDataset(Dataset):
 
 class SyntheticDataset(Dataset):
     def __init__(self):
-        self.time_dataset_name = 'synthetic_time_train.pkl'
-        self.event_dataset_name = 'synthetic_event_train.pkl'
+        self.time_dataset_name = 'synthetic_time_train1.pkl'
+        self.event_dataset_name = 'synthetic_event_train1.pkl'
 
         self.seq_len = cfg.GEN_MAX_SEQ_LEN
 
@@ -115,8 +143,8 @@ class SyntheticDataset(Dataset):
             self.time_dataset.extend(gen_time)
             self.event_dataset.extend(gen_event)
 
-        pickle.dump(self.time_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_time_train.pkl')), 'wb'))
-        pickle.dump(self.event_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_event_train.pkl')), 'wb'))
+        pickle.dump(self.time_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_time_train1.pkl')), 'wb'))
+        pickle.dump(self.event_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_event_train1.pkl')), 'wb'))
 
     def __len__(self):
         return len(self.time_dataset)
@@ -138,8 +166,9 @@ def collate_fn(batch_data):
 
 if __name__ == '__main__':
     # atm = ATMDataset(mode='train')
-    synthetic = SyntheticDataset()
-    print(len(synthetic))
+    # synthetic = SyntheticDataset()
+    synthetic = DemoDataset()
+    print(len(synthetic[0][0]))
     # print(atm[0])
     # for data in atm:
     #     print(len(data))
