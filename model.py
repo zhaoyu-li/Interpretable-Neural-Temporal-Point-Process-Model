@@ -112,41 +112,6 @@ class INTPP(nn.Module):
 
         return dt1
 
-    # def calculate_A(self, lj, gt_time, gt_target):
-    #     lj = lj.clone().detach().cpu().view(-1, self.config.seq_len - 1, self.config.event_class)
-    #     w = self.w.clone().detach()
-    #     w = - torch.abs(w)
-    #     gt_time = gt_time.clone().detach().cpu().float()
-    #     gt_target = gt_target.clone().detach().cpu().float()
-
-    #     with torch.no_grad():
-    #         As = []
-    #         for j in range(6, self.config.seq_len - 1):
-    #             al = []
-    #             for d in range(self.config.event_class):
-    #                 b = torch.exp(lj[:, j, d]).unsqueeze(-1).cpu().numpy()
-    #                 mark = []
-    #                 tmp_A = []
-    #                 for dd in range(self.config.event_class):
-    #                     mark.append((event_target == dd).float())
-    #                     # print(mark[dd].shape, time_target[:, j].shape)
-    #                     tmp = (torch.exp(w * (time_target[:, j, None] - time_target[:, :j + 1])) * mark[dd][:, :j + 1])
-    #                     # print(tmp.shape)
-    #                     tmp = tmp.sum(-1).unsqueeze(-1)
-    #                     tmp_A.append(tmp.cpu().numpy())
-    #                 A = np.concatenate(tmp_A, axis=1)
-    #                 clf = LinearRegression()
-    #                 clf.fit(A, b)
-    #                 # print(A.shape, b.shape, clf.coef_.shape)
-    #                 al.append(clf.coef_)
-    #             a = np.concatenate(al, axis=0)
-    #             # print(a.shape)
-    #             As.append(a)
-    #     new = np.mean(As, axis=0)
-    #     # print(new.shape)
-    #     self.A = new
-    #     return
-
     def get_parameters(self):
         return torch.abs(self.c).detach(), self.w.detach()
 
