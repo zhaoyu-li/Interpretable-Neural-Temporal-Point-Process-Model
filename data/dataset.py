@@ -140,7 +140,7 @@ class SyntheticDataset(Dataset):
         self.event_dataset = []
 
         for i in range(cfg.GEN_TRAIN_SEQ_NUM):
-            print(i)
+            # print(i)
             gen_time, gen_event = generate()
             self.time_dataset.extend(gen_time)
             self.event_dataset.extend(gen_event)
