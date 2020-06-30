@@ -31,7 +31,7 @@ def train(model, optimizer, scheduler, train_dataloader, test_dataloader, device
 
         print('Epoch {}, epoch loss = {}.'.format(epoch, epoch_loss / len(train_dataloader)))
 
-        if (epoch + 1) % 1 == 0:
+        if (epoch + 1) % cfg.VERBOSE_STEP == 0:
             evaluate(model, test_dataloader)
 
 
@@ -52,11 +52,14 @@ def evaluate(model, test_dataloader):
 
         cnt += len(pred_times)
 
-        for i in range(cfg.EVENT_CLASSES):
-            match_cnt[i] += torch.logical_and(pred_events == gt_events, pred_events == i).sum()
-            pred_cnt[i] += (pred_events == i).sum()
-            gt_cnt[i] += (gt_events == i).sum()
-            MAE += torch.abs(pred_times - gt_times).sum()
+        for pred_time, pred_event, gt_time, gt_event in zip(pred_times, pred_events, gt_times, gt_events):
+            pred_cnt[pred_event] += 1
+            gt_cnt[gt_event] += 1
+
+            if pred_event == gt_event:
+                match_cnt[pred_event] += 1
+
+            MAE += abs(pred_time - gt_time)
 
     print(pred_cnt)
 

@@ -57,6 +57,8 @@ __C.ALPHA = 0.05
 __C.DROPOUT = 0.1
 
 __C.USE_EVENT_LOSS = True
+__C.CALCULATE_A = False
+__C.VERBOSE_STEP = 100
 
 
 def _merge_a_into_b(a, b):

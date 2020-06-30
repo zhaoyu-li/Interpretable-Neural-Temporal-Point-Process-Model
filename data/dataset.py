@@ -43,7 +43,7 @@ class ATMDataset(Dataset):
 
         for time_seq, event_seq in zip(self.time_preprocess, self.event_preprocess):
             for i in range(len(time_seq) - self.seq_len + 1):
-                if time_seq[i + self.seq_len - 1] - time_seq[i] > 1:
+                if time_seq[i + self.seq_len - 1] - time_seq[i] > 10:
                     continue
                 self.time_dataset.append(time_seq[i: i + self.seq_len])
                 self.event_dataset.append(event_seq[i: i + self.seq_len])
@@ -159,8 +159,14 @@ def collate_fn(batch_data):
     time_seqs = []
     event_seqs = []
     for time_seq, event_seq in batch_data:
-        time_seq = np.array([time_seq[0]] + time_seq)
-        time_seq = np.diff(time_seq)
+        time_diff_seq = np.array([time_seq[0]] + time_seq)
+        time_diff_seq = np.diff(time_diff_seq)
+        
+        if cfg.CALCULATE_A:
+            time_seq = np.append(time_diff_seq, time_seq)
+        else:
+            time_seq = time_diff_seq
+
         time_seqs.append(time_seq)
         event_seqs.append(event_seq)
     return torch.FloatTensor(time_seqs), torch.LongTensor(event_seqs)

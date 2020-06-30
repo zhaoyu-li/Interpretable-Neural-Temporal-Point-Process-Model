@@ -14,14 +14,22 @@ def train(model, optimizer, scheduler, train_dataloader, device):
     for epoch in range(cfg.NUM_EPOCHS):
         model.train()
         epoch_loss = 0
+
+        A = np.zeros((cfg.EVENT_CLASSES, cfg.EVENT_CLASSES))
+
         for time_seqs, event_seqs in train_dataloader:
             time_seqs = time_seqs.to(device)
             event_seqs = event_seqs.to(device)
 
             model.zero_grad()
 
-            loss, lj = model.forward(time_seqs[:, :-1], event_seqs[:, :-1], time_seqs[:, 1:], event_seqs[:, 1:])
-            # A = model.calculate_A(lj, time_seqs[:, 1:], event_seqs[:, 1:])
+            if (epoch + 1) % cfg.VERBOSE_STEP == 0:
+                loss, A_batch = model.forward(time_seqs[:, :cfg.SEQ_LEN - 1], event_seqs[:, :-1], \
+                    time_seqs[:, 1:cfg.SEQ_LEN], event_seqs[:, 1:], time_seqs[:, cfg.SEQ_LEN + 1:])
+                A += A_batch
+            else:
+                loss, _ = model.forward(time_seqs[:, :cfg.SEQ_LEN - 1], event_seqs[:, :-1], \
+                    time_seqs[:, 1:cfg.SEQ_LEN], event_seqs[:, 1:])
 
             epoch_loss += loss.item()
 
@@ -30,8 +38,13 @@ def train(model, optimizer, scheduler, train_dataloader, device):
         
         scheduler.step()
 
+        A = A / len(train_dataloader)
+
         print('Epoch {}, epoch loss = {}.'.format(epoch, epoch_loss / len(train_dataloader)))
-        evaluate(model)
+        
+        if (epoch + 1) % cfg.VERBOSE_STEP == 0:
+            print('A', A)
+            evaluate(model)
 
 
 def evaluate(model):

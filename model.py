@@ -23,7 +23,7 @@ class INTPP(nn.Module):
         self.c = nn.Parameter(torch.ones(self.event_classes) * 0.8)
         self.w = nn.Parameter(-torch.tensor(0.2))
 
-    def forward(self, input_time, input_event, gt_time, gt_event):
+    def forward(self, input_time, input_event, gt_time, gt_event, base_time=None):
         event_embed = self.event_embed(input_event)
         event_embed = self.dropout(event_embed)
         time = input_time.unsqueeze(-1)
@@ -64,7 +64,35 @@ class INTPP(nn.Module):
         else:
             event_loss = 0
 
-        return (self.alpha * time_loss + event_loss), lj
+        A = None
+
+        if base_time is not None:
+            base_time = base_time.cpu()
+            gt_event = gt_event.clone().cpu()
+            w = w.clone().detach().cpu()
+            lj = lj.clone().detach().cpu().view(-1, cfg.SEQ_LEN - 1, cfg.EVENT_CLASSES)
+            A_list = []
+            for j in range(cfg.SEQ_LEN - 1):
+                a = []
+                for d in range(cfg.EVENT_CLASSES):
+                    b = torch.exp(lj[:, j, d]).unsqueeze(-1).cpu().numpy()
+                    mark = []
+                    tmp_A = []
+                    for dd in range(cfg.EVENT_CLASSES):
+                        mark.append((gt_event == dd).float())
+                        tmp = (torch.exp(w * (base_time[:, j, None] - base_time[:, :j + 1])) * mark[dd][:, :j + 1])
+                        tmp = tmp.sum(dim=-1).unsqueeze(-1)
+                        tmp_A.append(tmp.cpu().numpy())
+                    A_ = np.concatenate(tmp_A, axis=1)
+                    clf = LinearRegression()
+                    clf.fit(A_, b)
+                    a.append(clf.coef_)
+                a = np.concatenate(a, axis=0)
+                A_list.append(a)
+
+            A = np.mean(A_list, axis=0)
+
+        return (self.alpha * time_loss + event_loss), A
 
     def predict(self, input_time, input_event):
         event_embed = self.event_embed(input_event)
@@ -114,6 +142,3 @@ class INTPP(nn.Module):
 
     def get_parameters(self):
         return torch.abs(self.c).detach(), self.w.detach()
-
-
-
