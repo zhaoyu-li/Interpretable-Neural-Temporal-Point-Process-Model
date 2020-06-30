@@ -28,7 +28,7 @@ __C.RAND_SEED = 2020
 
 # Parameters
 __C.Z = 2
-__C.W = 1
+__C.W = 1.0
 
 __C.MU = np.array(
     [0.3, 0.5]
@@ -55,6 +55,8 @@ __C.EVENT_EMBED_DIM = 20
 __C.LSTM_HIDDEN_DIM = 32
 __C.ALPHA = 0.05
 __C.DROPOUT = 0.1
+
+__C.USE_EVENT_LOSS = True
 
 
 def _merge_a_into_b(a, b):

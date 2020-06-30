@@ -13,7 +13,6 @@ from model import INTPP
 def train(model, optimizer, scheduler, train_dataloader, device):
     for epoch in range(cfg.NUM_EPOCHS):
         model.train()
-        scheduler.step()
         epoch_loss = 0
         for time_seqs, event_seqs in train_dataloader:
             time_seqs = time_seqs.to(device)
@@ -22,18 +21,21 @@ def train(model, optimizer, scheduler, train_dataloader, device):
             model.zero_grad()
 
             loss, lj = model.forward(time_seqs[:, :-1], event_seqs[:, :-1], time_seqs[:, 1:], event_seqs[:, 1:])
-            A = model.calculate_A(lj, time_seqs[:, 1:], event_seqs[:, 1:])
+            # A = model.calculate_A(lj, time_seqs[:, 1:], event_seqs[:, 1:])
 
             epoch_loss += loss.item()
 
             loss.backward()
             optimizer.step()
+        
+        scheduler.step()
 
         print('Epoch {}, epoch loss = {}.'.format(epoch, epoch_loss / len(train_dataloader)))
         evaluate(model)
 
 
 def evaluate(model):
+    model.eval()
     c, w = model.get_parameters()
     print('c', c)
     print('w', w)
@@ -49,8 +51,10 @@ if __name__ == '__main__':
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-    # train_dataset = SyntheticDataset()
-    train_dataset = DemoDataset()
+    if cfg.Z == 10:
+        train_dataset = SyntheticDataset()
+    else:
+        train_dataset = DemoDataset()
 
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=cfg.BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
     model = INTPP()

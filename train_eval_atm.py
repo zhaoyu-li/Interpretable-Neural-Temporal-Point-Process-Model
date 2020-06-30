@@ -13,7 +13,6 @@ from model import INTPP
 def train(model, optimizer, scheduler, train_dataloader, test_dataloader, device):
     for epoch in range(cfg.NUM_EPOCHS):
         model.train()
-        scheduler.step()
         epoch_loss = 0
         for time_seqs, event_seqs in train_dataloader:
             time_seqs = time_seqs.to(device)
@@ -21,20 +20,23 @@ def train(model, optimizer, scheduler, train_dataloader, test_dataloader, device
 
             model.zero_grad()
 
-            loss, lj = model.forward(time_seqs[:, :-1], event_seqs[:, :-1], time_seqs[:, 1:], event_seqs[:, 1:])
+            loss, _ = model.forward(time_seqs[:, :-1], event_seqs[:, :-1], time_seqs[:, 1:], event_seqs[:, 1:])
 
             epoch_loss += loss.item()
 
             loss.backward()
             optimizer.step()
+        
+        scheduler.step()
 
         print('Epoch {}, epoch loss = {}.'.format(epoch, epoch_loss / len(train_dataloader)))
 
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 1 == 0:
             evaluate(model, test_dataloader)
 
 
 def evaluate(model, test_dataloader):
+    model.eval()
     pred_cnt = np.zeros(cfg.EVENT_CLASSES)
     gt_cnt = np.zeros(cfg.EVENT_CLASSES)
     match_cnt = np.zeros(cfg.EVENT_CLASSES)
@@ -50,14 +52,13 @@ def evaluate(model, test_dataloader):
 
         cnt += len(pred_times)
 
-        for pred_time, pred_event, gt_time, gt_event in zip(pred_times, pred_events, gt_times, gt_events):
-            pred_cnt[pred_event] += 1
-            gt_cnt[gt_event] += 1
+        for i in range(cfg.EVENT_CLASSES):
+            match_cnt[i] += torch.logical_and(pred_events == gt_events, pred_events == i).sum()
+            pred_cnt[i] += (pred_events == i).sum()
+            gt_cnt[i] += (gt_events == i).sum()
+            MAE += torch.abs(pred_times - gt_times).sum()
 
-            if pred_event == gt_event:
-                match_cnt[pred_event] += 1
-
-            MAE += abs(pred_time - gt_time)
+    print(pred_cnt)
 
     precision = match_cnt / pred_cnt
     recall = match_cnt / gt_cnt
@@ -67,7 +68,7 @@ def evaluate(model, test_dataloader):
     print('Precision of the pred events is {}, avg is {}'.format(precision, precision.mean()))
     print('Recall of the pred events is {}, avg is {}'.format(recall, recall.mean()))
     print('F1_score of the pred events is {}, avg is {}'.format(f1_score, f1_score.mean()))
-    print('MAE of the pred events is', MAE)
+    print('MAE of the pred times is', MAE)
 
 
 if __name__ == '__main__':

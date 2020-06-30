@@ -43,6 +43,8 @@ class ATMDataset(Dataset):
 
         for time_seq, event_seq in zip(self.time_preprocess, self.event_preprocess):
             for i in range(len(time_seq) - self.seq_len + 1):
+                if time_seq[i + self.seq_len - 1] - time_seq[i] > 1:
+                    continue
                 self.time_dataset.append(time_seq[i: i + self.seq_len])
                 self.event_dataset.append(event_seq[i: i + self.seq_len])
 
@@ -83,8 +85,8 @@ class DemoDataset(Dataset):
 
 class SyntheticDataset(Dataset):
     def __init__(self):
-        self.time_dataset_name = 'synthetic_time_train1.pkl'
-        self.event_dataset_name = 'synthetic_event_train1.pkl'
+        self.time_dataset_name = 'synthetic_time_train.pkl'
+        self.event_dataset_name = 'synthetic_event_train.pkl'
 
         self.seq_len = cfg.GEN_MAX_SEQ_LEN
 
@@ -143,8 +145,8 @@ class SyntheticDataset(Dataset):
             self.time_dataset.extend(gen_time)
             self.event_dataset.extend(gen_event)
 
-        pickle.dump(self.time_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_time_train1.pkl')), 'wb'))
-        pickle.dump(self.event_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_event_train1.pkl')), 'wb'))
+        pickle.dump(self.time_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_time_train.pkl')), 'wb'))
+        pickle.dump(self.event_dataset, open(osp.abspath(osp.join(cfg.DATA_DIR, 'synthetic_event_train.pkl')), 'wb'))
 
     def __len__(self):
         return len(self.time_dataset)

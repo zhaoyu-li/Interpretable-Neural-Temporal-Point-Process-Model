@@ -35,11 +35,13 @@ class INTPP(nn.Module):
 
         h = torch.cat([hidden, gt_time.unsqueeze(-1)], dim=-1)
         h = h.reshape(-1, self.lstm_hidden_dim + 1)
+
         hidden = hidden.reshape(-1, self.lstm_hidden_dim)
         lj = self.time_linear(hidden)
+        
         wdt = gt_time.reshape(-1, 1) * w
         lam = torch.exp(lj + wdt) + c
-        LAM = (torch.exp(lj + wdt) - torch.exp(lj)) / self.w + torch.matmul(gt_time.reshape(-1, 1), c.unsqueeze(0))
+        LAM = (torch.exp(lj + wdt) - torch.exp(lj)) / w + torch.matmul(gt_time.reshape(-1, 1), c.unsqueeze(0))
 
         pred_event = self.event_linear(h)
 
@@ -57,7 +59,10 @@ class INTPP(nn.Module):
 
         time_loss = -torch.mean(preLAMlogF)
 
-        event_loss = F.cross_entropy(pred_event, gt_event.reshape(-1))
+        if cfg.USE_EVENT_LOSS:
+            event_loss = F.cross_entropy(pred_event, gt_event.reshape(-1))
+        else:
+            event_loss = 0
 
         return (self.alpha * time_loss + event_loss), lj
 
@@ -68,8 +73,8 @@ class INTPP(nn.Module):
         lstm_input = torch.cat([time, event_embed], dim=-1)
         hidden, _ = self.lstm(lstm_input)
 
-        w = self.w
         c = torch.abs(self.c)
+        w = self.w
 
         hidden = hidden.reshape(-1, self.lstm_hidden_dim)
         lj = self.time_linear(hidden)
@@ -107,40 +112,40 @@ class INTPP(nn.Module):
 
         return dt1
 
-    def calculate_A(self, lj, gt_time, gt_target):
-        lj = lj.clone().detach().cpu().view(-1, self.config.seq_len - 1, self.config.event_class)
-        w = self.w.clone().detach()
-        w = - torch.abs(w)
-        gt_time = gt_time.clone().detach().cpu().float()
-        gt_target = gt_target.clone().detach().cpu().float()
+    # def calculate_A(self, lj, gt_time, gt_target):
+    #     lj = lj.clone().detach().cpu().view(-1, self.config.seq_len - 1, self.config.event_class)
+    #     w = self.w.clone().detach()
+    #     w = - torch.abs(w)
+    #     gt_time = gt_time.clone().detach().cpu().float()
+    #     gt_target = gt_target.clone().detach().cpu().float()
 
-        with torch.no_grad():
-            As = []
-            for j in range(6, self.config.seq_len - 1):
-                al = []
-                for d in range(self.config.event_class):
-                    b = torch.exp(lj[:, j, d]).unsqueeze(-1).cpu().numpy()
-                    mark = []
-                    tmp_A = []
-                    for dd in range(self.config.event_class):
-                        mark.append((event_target == dd).float())
-                        # print(mark[dd].shape, time_target[:, j].shape)
-                        tmp = (torch.exp(w * (time_target[:, j, None] - time_target[:, :j + 1])) * mark[dd][:, :j + 1])
-                        # print(tmp.shape)
-                        tmp = tmp.sum(-1).unsqueeze(-1)
-                        tmp_A.append(tmp.cpu().numpy())
-                    A = np.concatenate(tmp_A, axis=1)
-                    clf = LinearRegression()
-                    clf.fit(A, b)
-                    # print(A.shape, b.shape, clf.coef_.shape)
-                    al.append(clf.coef_)
-                a = np.concatenate(al, axis=0)
-                # print(a.shape)
-                As.append(a)
-        new = np.mean(As, axis=0)
-        # print(new.shape)
-        self.A = new
-        return
+    #     with torch.no_grad():
+    #         As = []
+    #         for j in range(6, self.config.seq_len - 1):
+    #             al = []
+    #             for d in range(self.config.event_class):
+    #                 b = torch.exp(lj[:, j, d]).unsqueeze(-1).cpu().numpy()
+    #                 mark = []
+    #                 tmp_A = []
+    #                 for dd in range(self.config.event_class):
+    #                     mark.append((event_target == dd).float())
+    #                     # print(mark[dd].shape, time_target[:, j].shape)
+    #                     tmp = (torch.exp(w * (time_target[:, j, None] - time_target[:, :j + 1])) * mark[dd][:, :j + 1])
+    #                     # print(tmp.shape)
+    #                     tmp = tmp.sum(-1).unsqueeze(-1)
+    #                     tmp_A.append(tmp.cpu().numpy())
+    #                 A = np.concatenate(tmp_A, axis=1)
+    #                 clf = LinearRegression()
+    #                 clf.fit(A, b)
+    #                 # print(A.shape, b.shape, clf.coef_.shape)
+    #                 al.append(clf.coef_)
+    #             a = np.concatenate(al, axis=0)
+    #             # print(a.shape)
+    #             As.append(a)
+    #     new = np.mean(As, axis=0)
+    #     # print(new.shape)
+    #     self.A = new
+    #     return
 
     def get_parameters(self):
         return torch.abs(self.c).detach(), self.w.detach()
