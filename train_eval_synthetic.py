@@ -55,7 +55,7 @@ def evaluate(model):
 
 
 if __name__ == '__main__':
-    args = parse_args('Use INTPP to fit and predict on a ATM dataset.')
+    args = parse_args('Use INTPP to fit and predict on a synthetic dataset.')
     torch.manual_seed(cfg.RAND_SEED)
     torch.cuda.manual_seed(cfg.RAND_SEED)
     torch.cuda.manual_seed_all(cfg.RAND_SEED)
